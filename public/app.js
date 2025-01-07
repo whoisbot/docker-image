@@ -680,7 +680,9 @@ function handleFileSelect(event) {
 // 修改初始化代码，添加拖放处理
 document.addEventListener('DOMContentLoaded', () => {
     initWebSocket();
-    
+
+
+
     // 添加文件输入监听
     const fileInput = document.getElementById('fileInput');
     fileInput.addEventListener('change', async () => {
@@ -794,22 +796,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 处理移动端键盘事件
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        const messageInput = document.getElementById('messageInput');
-        
-        // 键盘弹出时滚动到底部
+        // 键盘弹出时滚动到输入框
         messageInput.addEventListener('focus', () => {
             setTimeout(() => {
-                window.scrollTo(0, 0);
-                document.body.scrollTop = 0;
+                messageInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 300);
         });
 
-        // 键盘收起时重置滚动
+        // 键盘收起时不需要特殊处理
         messageInput.addEventListener('blur', () => {
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-                document.body.scrollTop = 0;
-            }, 300);
+            // 可以选择在键盘收起时执行其他操作
         });
     }
 });

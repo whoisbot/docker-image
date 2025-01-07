@@ -1,5 +1,5 @@
 # 使用 ARM64 支持的 Node.js 镜像作为基础镜像
-FROM --platform=linux/arm64 node:16-alpine
+FROM node:16-alpine
 
 # 设置工作目录
 WORKDIR /usr/src/app

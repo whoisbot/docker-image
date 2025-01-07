@@ -26,12 +26,14 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Step 4: 构建并标记镜像，并推送到 Docker Hub
+    # Step 4: 构建 Docker 镜像并标记，并打印镜像列表
     - name: Build and push the Docker image for aarch64
       run: |
-        docker buildx build --platform linux/arm64,linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/localshare-app:latest --push .
+        docker buildx build --platform linux/arm64,linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/localshare:latest --push .
+        # 打印本地镜像列表，确认镜像是否构建成功
+        docker images
 
     # Step 5: 推送 Docker 镜像
     - name: Push the Docker image
       run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/localshare-app:latest
+        docker push ${{ secrets.DOCKER_USERNAME }}/localshare:latest

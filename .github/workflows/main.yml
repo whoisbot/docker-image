@@ -25,8 +25,8 @@ jobs:
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
       with:
-        username: ${{ secrets.DOCKER_USERNAME }}  # Docker Hub 用户名（使用 GitHub Secrets）
-        password: ${{ secrets.DOCKER_PASSWORD }}  # Docker Hub 密码（使用 GitHub Secrets）
+        username: ${{ secrets.DOCKER_USERNAME }}  # 使用 GitHub Secrets 中的 Docker Hub 用户名
+        password: ${{ secrets.DOCKER_PASSWORD }}  # 使用 GitHub Secrets 中的 Docker Hub 密码或 Personal Access Token
 
     # Step 4: 构建并推送 ARM64 Docker 镜像
     - name: Build and push ARM64 Docker image
@@ -35,5 +35,5 @@ jobs:
         context: .  # 使用当前目录作为构建上下文
         file: ./Dockerfile  # 指定 Dockerfile 文件
         push: true  # 推送镜像到 Docker Hub
-        tags: your-dockerhub-username/localshare:latest  # 镜像的标签，替换为你的 Docker Hub 用户名
+        tags: whoisbot/localshare:latest  # 镜像的标签，替换为你的 Docker Hub 用户名
         platforms: linux/arm64  # 只为 ARM64 架构构建镜像

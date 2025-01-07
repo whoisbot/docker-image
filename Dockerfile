@@ -1,20 +1,17 @@
-# 使用官方的 Node.js 22.12.0 镜像作为基础镜像
-FROM node:22.12.0
+# 使用 ARM64 支持的 Node.js 镜像作为基础镜像
+FROM --platform=linux/arm64 node:16-alpine
 
-# 创建并设置工作目录
+# 设置工作目录
 WORKDIR /usr/src/app
 
-# 复制 package.json 和 package-lock.json 到容器中的工作目录
-COPY package*.json ./
-
-# 安装项目依赖
-RUN npm install
-
-# 复制整个项目到容器中
+# 将当前目录的所有文件复制到容器中的工作目录
 COPY . .
 
-# 暴露容器内的端口（假设应用在 3000 端口运行）
+# 安装依赖
+RUN npm install
+
+# 暴露项目运行的端口 (假设项目在 3000 端口运行)
 EXPOSE 3000
 
-# 设置容器启动时的默认命令
+# 设置容器启动时执行的命令
 CMD ["npm", "start"]

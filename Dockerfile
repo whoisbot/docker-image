@@ -1,4 +1,4 @@
-# 使用 ARM64 支持的 Node.js 镜像作为基础镜像
+# 使用 ARM64 支持的 Node.js 镜像作为基础镜像1
 FROM node:16-alpine
 
 # 设置工作目录

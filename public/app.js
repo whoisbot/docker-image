@@ -658,6 +658,27 @@ function getMimeType(fileName) {
     return mimeTypes[extension] || 'application/octet-stream';
 }
 
+
+
+
+
+
+// 复制消息内容的函数
+function copyMessage(messageText) {
+    const textarea = document.createElement('textarea');
+    textarea.value = messageText;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+
+    alert('消息已复制');
+}
+
+
+
+
+
 // 添加文件选择处理函数
 function handleFileSelect(event) {
     const fileInput = event.target;
@@ -749,11 +770,61 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 发送按钮处理文本消息
     const sendButton = document.getElementById('sendButton');
+    const pasteButton = document.getElementById('pasteButton');
     const messageInput = document.getElementById('messageInput');
+
     
     // 添加调试日志
     console.log('发送按钮:', sendButton);
     console.log('消息输入框:', messageInput);
+
+
+
+
+
+// 粘贴按钮的点击事件
+pasteButton.addEventListener('click', () => {
+    // 先尝试使用 Clipboard API
+    if (navigator.clipboard && navigator.clipboard.readText) {
+        // 聚焦输入框，确保光标在输入框内
+        messageInput.focus();
+
+        // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
+        setTimeout(() => {
+            messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300); // 延时，以便键盘弹出时能够滚动
+
+        navigator.clipboard.readText()
+            .then(text => {
+                // 追加剪贴板内容到输入框当前内容
+                messageInput.value += text;  // 使用 += 来追加内容
+            })
+            .catch(err => {
+                console.error('粘贴失败:', err);
+            });
+    } else {
+        // 如果 Clipboard API 不支持，回退到旧的 execCommand 方法
+        try {
+            // 先聚焦输入框，确保光标在输入框内
+            messageInput.focus();
+
+            // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
+            setTimeout(() => {
+                messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300); // 延时，以便键盘弹出时能够滚动
+
+            document.execCommand('paste');
+        } catch (err) {
+            console.error('execCommand 粘贴失败:', err);
+        }
+    }
+});
+
+
+
+
+
+
     
     // 回车发送
     messageInput.addEventListener('keydown', (e) => {
@@ -788,13 +859,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 添加自动调整高度的功能
-    messageInput.addEventListener('input', () => {
-        messageInput.style.height = 'auto';
-        messageInput.style.height = Math.min(messageInput.scrollHeight, parseInt(getComputedStyle(messageInput).maxHeight)) + 'px';
-    });
 
-    // 处理移动端键盘事件
+
+
+
+// 发送按钮点击事件
+sendButton.addEventListener('click', () => {
+    sendButton.disabled = true;
+
+    if (selectedDevice) {
+        const message = messageInput.value.trim();
+        if (message) {
+            // 将输入中的换行符 (\n) 转换为 <br> 标签
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            
+            // 发送消息
+            ws.send(JSON.stringify({
+                type: 'message',
+                to: selectedDevice.deviceId,
+                from: deviceId,
+                message: formattedMessage,  // 发送经过格式化的消息
+                sender: getDeviceName()
+            }));
+
+            // 添加到聊天区域
+            addChatMessage(formattedMessage, getDeviceName(), true);
+
+            // 清空输入框
+            messageInput.value = '';
+            // 重置输入框高度
+            messageInput.style.height = 'auto';
+        }
+    }
+
+    // 0.3秒后恢复按钮状态
+    setTimeout(() => {
+        sendButton.disabled = false;
+    }, 300);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 添加自动调整高度的功能
+messageInput.addEventListener('input', () => {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = Math.min(messageInput.scrollHeight, parseInt(getComputedStyle(messageInput).maxHeight)) + 'px';
+});
+
+
+
+
+
+
+
+
+
+
+// 处理移动端键盘事件
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         // 键盘弹出时滚动到输入框
         messageInput.addEventListener('focus', () => {
@@ -810,6 +942,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+
+
+
+
+
+
+
+
+
 // 添加消息到聊天区域
 function addChatMessage(message, sender, isSelf = false, deviceId = selectedDevice?.deviceId) {
     // 保存消息到历史记录
@@ -820,26 +962,87 @@ function addChatMessage(message, sender, isSelf = false, deviceId = selectedDevi
         deviceId,
         timestamp: Date.now()
     });
-    
+
+    // 将消息中的换行符（\n）替换为 <br> 标签
+    const formattedMessage = message.replace(/\n/g, '<br>');
+
     // 如果是当前选中的设备的消息，则显示
     if (deviceId === selectedDevice?.deviceId) {
-        displayMessage(message, sender, isSelf);
+        displayMessage(formattedMessage, sender, isSelf);
     }
 }
 
-// 修改显示消息的函数
+
 function displayMessage(message, sender, isSelf) {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message ${isSelf ? 'self' : 'other'}`;
-    
+
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    contentDiv.textContent = message;
-    
+
+    // 使用 innerHTML 来显示带有 <br> 标签的文本
+    contentDiv.innerHTML = message; // 显示带换行的内容
+
+    // 创建复制按钮
+    const copyButton = document.createElement('button');
+    copyButton.className = 'copy-button';
+    copyButton.textContent = '复制';
+
+    // 设置复制按钮样式，确保它在右下角
+    copyButton.style.position = 'absolute';
+    copyButton.style.bottom = '4px';
+    copyButton.style.right = '10px';
+    copyButton.style.backgroundColor = '#4CAF50';
+    copyButton.style.color = 'white';
+    copyButton.style.border = 'none';
+    copyButton.style.borderRadius = '5px';
+    copyButton.style.padding = '5px 10px';
+    copyButton.style.cursor = 'pointer';
+
+    // 绑定复制事件
+    copyButton.addEventListener('click', () => {
+        // 使用 Clipboard API 来复制纯文本，不带 HTML 格式
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            // 复制纯文本，不带 <br> 标签
+            const plainTextMessage = message.replace(/<br>/g, '\n'); // 将 <br> 转换回换行符
+            navigator.clipboard.writeText(plainTextMessage) // 复制纯文本
+                .then(() => {
+                    console.log('文本复制成功');
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                });
+        } else {
+            // 如果 Clipboard API 不支持，使用 execCommand 进行复制
+            const textarea = document.createElement('textarea');
+            textarea.value = message.replace(/<br>/g, '\n'); // 将 <br> 转换回换行符
+            textarea.style.position = 'absolute';
+            textarea.style.left = '-9999px';
+            textarea.setAttribute('readonly', 'true');
+            document.body.appendChild(textarea);
+
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                console.log('文本复制成功');
+            } catch (err) {
+                console.error('复制失败:', err);
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+    });
+
+    // 将消息内容和复制按钮添加到消息容器
     messageDiv.appendChild(contentDiv);
+    messageDiv.appendChild(copyButton);
+
+    // 为每条消息容器设置相对定位，以便复制按钮定位
+    messageDiv.style.position = 'relative';
     chatMessages.appendChild(messageDiv);
-    
+
     // 滚动到底部
     chatMessages.scrollTop = chatMessages.scrollHeight;
-} 
+}

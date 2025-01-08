@@ -25,7 +25,9 @@
                 <div class="chat-container">
                     <div class="chat-messages" id="chatMessages"></div>
                     <div class="chat-input-area">
+                        <!-- 这里将粘贴按钮放在输入框的右边 -->
                         <textarea id="messageInput" placeholder="输入消息..." rows="1" enterkeyhint="send"></textarea>
+                        <button id="pasteButton" class="paste-button">粘贴</button>
                         <label class="file-select-button" for="fileInput">
                             <svg class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M873.753974 149.961384A511.715358 511.715358 0 1 0 149.676742 874.038616 511.715358 511.715358 0 0 0 873.753974 149.961384zM831.537457 828.623878a447.750939 447.750939 0 1 1-633.247756-633.247756 447.750939 447.750939 0 0 1 633.247756 633.247756z"/>
@@ -33,6 +35,7 @@
                             </svg>
                             <input type="file" id="fileInput" multiple>
                         </label>
+                        <button id="sendButton">发送</button>
                     </div>
                 </div>
             </div>
@@ -40,4 +43,4 @@
     </div>
     <script src="app.js"></script>
 </body>
-</html> 
+</html>

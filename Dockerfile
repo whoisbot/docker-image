@@ -1,8 +1,7 @@
-# 使用官方的 Node.js 22.12.0 镜像作为基础镜像
 FROM node:16-alpine
 
 # 安装 openssl
-RUN apt-get update && apt-get install -y openssl
+RUN apk update && apk add openssl
 
 # 创建并设置工作目录
 WORKDIR /usr/src/app
@@ -25,3 +24,4 @@ EXPOSE 8080
 
 # 设置容器启动时的默认命令
 CMD ["npm", "start"]
+

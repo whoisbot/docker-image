@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # 复制自签名证书到容器内
-COPY cert.pem /usr/local/share/ca-certificates/cert.pem
+COPY cert.crt /usr/local/share/ca-certificates/cert.crt
 COPY private.key /etc/ssl/private/private.key
 
 # 安装 ca-certificates 包并更新证书

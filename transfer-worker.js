@@ -2,6 +2,7 @@ importScripts('https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js');
 
 let currentFileId = null;
 let processedChunks = new Map();
+let isPaused = false;  // 新增变量，控制是否暂停接收
 
 self.onmessage = async function(e) {
     const { type, data } = e.data;
@@ -13,13 +14,29 @@ self.onmessage = async function(e) {
             break;
 
         case 'processChunk':
-            await handleReceivedChunk(data);
+            if (!isPaused) {
+                await handleReceivedChunk(data);
+            }
+            break;
+
+        case 'pause':  // 新增暂停处理
+            isPaused = true;
+            console.log('接收暂停');
+            break;
+
+        case 'resume':  // 新增恢复处理
+            isPaused = false;
+            console.log('接收恢复');
             break;
     }
 };
 
 async function processChunks(chunks, workerId, channelId) {
     for (const chunk of chunks) {
+        if (isPaused) {
+            break;  // 如果处于暂停状态，停止处理后续的分片
+        }
+
         const compressed = pako.deflate(new Uint8Array(chunk));
         
         // 创建二进制消息
@@ -59,4 +76,4 @@ async function handleReceivedChunk(data) {
         workerId: workerId,
         data: decompressed.buffer
     }, [decompressed.buffer]);
-} 
+}

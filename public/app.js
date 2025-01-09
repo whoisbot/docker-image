@@ -796,8 +796,7 @@ pasteButton.addEventListener('click', () => {
 
         navigator.clipboard.readText()
             .then(text => {
-                // 追加剪贴板内容到输入框当前内容
-                messageInput.value += text;  // 使用 += 来追加内容
+                messageInput.value = text;
             })
             .catch(err => {
                 console.error('粘贴失败:', err);

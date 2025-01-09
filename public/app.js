@@ -784,41 +784,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 粘贴按钮的点击事件
 pasteButton.addEventListener('click', () => {
+    // 确保输入框可聚焦
+    messageInput.focus();
+
+    // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
+    setTimeout(() => {
+        messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300); // 延时，以便键盘弹出时能够滚动
+
     // 先尝试使用 Clipboard API
     if (navigator.clipboard && navigator.clipboard.readText) {
-        // 聚焦输入框，确保光标在输入框内
-        messageInput.focus();
-
-        // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
-        setTimeout(() => {
-            messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300); // 延时，以便键盘弹出时能够滚动
-
         navigator.clipboard.readText()
             .then(text => {
-                // 追加剪贴板内容到输入框当前内容
                 messageInput.value += text;  // 使用 += 来追加内容
             })
             .catch(err => {
-                console.error('粘贴失败:', err);
+                console.error('Clipboard API 粘贴失败:', err);
+                fallbackPaste();  // 如果 Clipboard API 失败，使用 execCommand 回退
             });
     } else {
-        // 如果 Clipboard API 不支持，回退到旧的 execCommand 方法
+        console.warn('Clipboard API 不支持，回退到 execCommand');
+        fallbackPaste();
+    }
+
+    function fallbackPaste() {
         try {
-            // 先聚焦输入框，确保光标在输入框内
-            messageInput.focus();
-
-            // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
-            setTimeout(() => {
-                messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300); // 延时，以便键盘弹出时能够滚动
-
+            // 使用 execCommand 作为回退方案
             document.execCommand('paste');
         } catch (err) {
             console.error('execCommand 粘贴失败:', err);
         }
     }
 });
+
 
 
 

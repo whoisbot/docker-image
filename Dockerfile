@@ -17,8 +17,8 @@ COPY . .
 COPY cert.pem /usr/local/share/ca-certificates/cert.pem
 COPY private.key /etc/ssl/private/private.key
 
-# 更新证书
-RUN update-ca-certificates
+# 安装 ca-certificates 包并更新证书
+RUN apk add --no-cache ca-certificates && update-ca-certificates
 
 # 暴露容器内的端口（假设应用在 3000 端口运行）
 EXPOSE 3000

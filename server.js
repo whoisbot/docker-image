@@ -1,30 +1,28 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';  // 请确保只在开发环境中使用
 const express = require('express');
-const fs = require('fs');
-const https = require('https');
+const WebSocket = require('ws');
 const path = require('path');
 const cors = require('cors');
-
-// 读取证书和私钥
-const privateKey = fs.readFileSync('/etc/ssl/private/private.key');
-const certificate = fs.readFileSync('/usr/local/share/ca-certificates/cert.crt');
-
-const credentials = { key: privateKey, cert: certificate };
+const https = require('https');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// 读取 SSL 证书
+const privateKey = fs.readFileSync('private.key', 'utf8');
+const certificate = fs.readFileSync('certificate.crt', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
 
 // 中间件
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 创建 HTTPS 服务器
-const server = https.createServer(credentials, app);
+const httpsServer = https.createServer(credentials, app);
 
-// WebSocket 服务器（使用 HTTPS 服务器）
-const WebSocket = require('ws');
-const wsServer = new WebSocket.Server({
-    server: server,  // 使用 HTTPS 服务器提供 WebSocket 服务
+// WebSocket 服务器（在 https 服务器上运行）
+const wss = new WebSocket.Server({
+    server: httpsServer,
     perMessageDeflate: false,
     maxPayload: 20 * 1024 * 1024
 });
@@ -46,26 +44,32 @@ function broadcastDeviceList() {
 
     console.log('广播设备列表:', deviceList);
     
+    // 向所有连接的客户端广播设备列表
     for (const client of clients.values()) {
         if (client.ws.readyState === WebSocket.OPEN) {
+            console.log(`广播消息到设备 ${client.deviceInfo.name}`);
             client.ws.send(message);
         }
     }
 }
 
-// WebSocket 连接事件
-wsServer.on('connection', (ws) => {
+// 处理 WebSocket 连接
+wss.on('connection', (ws) => {
     console.log('新客户端连接');
-    
+    console.log('WebSocket 连接信息:', ws);
+
     // 处理二进制消息
     function handleBinaryMessage(data) {
         try {
+            // 解析头信息
             const headerSize = data.readUInt32LE(0);
             const headerData = data.slice(4, 4 + headerSize);
             const header = JSON.parse(headerData.toString());
 
+            // 转发给目标设备
             const targetClient = clients.get(header.to);
             if (targetClient && targetClient.ws.readyState === WebSocket.OPEN) {
+                // 直接转发原始二进制数据
                 targetClient.ws.send(data, { binary: true });
             } else {
                 console.log('目标设备不存在或未连接:', header.to);
@@ -74,7 +78,7 @@ wsServer.on('connection', (ws) => {
             console.error('处理二进制消息失败:', error);
         }
     }
-    
+
     // 处理文本消息
     function handleTextMessage(message) {
         console.log('处理文本消息:', message);
@@ -87,6 +91,7 @@ wsServer.on('connection', (ws) => {
                     ws: ws,
                     deviceInfo: message.deviceInfo
                 });
+                // 广播设备列表
                 broadcastDeviceList();
                 break;
 
@@ -95,12 +100,13 @@ wsServer.on('connection', (ws) => {
                 console.log('转发消息:', message);
                 const targetClient = clients.get(message.to);
                 if (targetClient && targetClient.ws.readyState === WebSocket.OPEN) {
+                    console.log('转发消息到:', message.to);
                     targetClient.ws.send(JSON.stringify(message));
                 } else {
                     console.log('目标设备不存在或未连接:', message.to);
                 }
                 break;
-                
+
             default:
                 console.log('未知消息类型:', message.type);
         }
@@ -109,20 +115,29 @@ wsServer.on('connection', (ws) => {
     // 处理消息
     ws.on('message', (data) => {
         try {
+            // 如果是字符串，直接作为JSON处理
             if (typeof data === 'string') {
                 const message = JSON.parse(data);
                 handleTextMessage(message);
                 return;
             }
 
-            handleBinaryMessage(data);
+            // 尝试解析为JSON
+            try {
+                const message = JSON.parse(data.toString());
+                handleTextMessage(message);
+            } catch {
+                // 如果解析JSON失败，则作为二进制消息处理
+                handleBinaryMessage(data);
+            }
         } catch (error) {
             console.error('处理消息时出错:', error);
         }
     });
 
-    // 关闭连接时清理
+    // 处理连接关闭
     ws.on('close', () => {
+        // 清理断开的连接
         for (const [deviceId, client] of clients.entries()) {
             if (client.ws === ws) {
                 console.log('设备断开连接:', deviceId);
@@ -130,12 +145,13 @@ wsServer.on('connection', (ws) => {
                 break;
             }
         }
+        // 广播更新后的设备列表
         broadcastDeviceList();
     });
 });
 
-// 启动 HTTPS 和 WebSocket 服务器
-server.listen(port, () => {
-    console.log(`HTTPS 服务器运行在 https://localhost:${port}`);
+// 启动 HTTPS 服务器
+httpsServer.listen(port, () => {
+    console.log(`服务器运行在 https://localhost:${port}`);
     console.log(`WebSocket 服务器运行在 wss://localhost:8080`);
 });

@@ -1,5 +1,5 @@
 # 使用官方的 Node.js 22.12.0 镜像作为基础镜像
-FROM node:22.12.0
+FROM node:16-alpine
 
 # 创建并设置工作目录
 WORKDIR /usr/src/app

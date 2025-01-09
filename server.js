@@ -1,4 +1,4 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';  // 请确保只在开发环境中使用
 const express = require('express');
 const fs = require('fs');
 const https = require('https');
@@ -6,8 +6,9 @@ const path = require('path');
 const cors = require('cors');
 
 // 读取证书和私钥
-const privateKey = fs.readFileSync(path.join(__dirname, 'private.key'), 'utf8');
-const certificate = fs.readFileSync(path.join(__dirname, 'cert.pem'), 'utf8');
+const privateKey = fs.readFileSync('/etc/ssl/private/private.key');
+const certificate = fs.readFileSync('/usr/local/share/ca-certificates/cert.pem');
+
 const credentials = { key: privateKey, cert: certificate };
 
 const app = express();
@@ -17,10 +18,13 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// WebSocket 服务器（保持之前的 WebSocket 配置）
+// 创建 HTTPS 服务器
+const server = https.createServer(credentials, app);
+
+// WebSocket 服务器（使用 HTTPS 服务器）
 const WebSocket = require('ws');
 const wsServer = new WebSocket.Server({
-    server: https.createServer(credentials, app),  // 使用 https 服务器提供 WebSocket 服务
+    server: server,  // 使用 HTTPS 服务器提供 WebSocket 服务
     perMessageDeflate: false,
     maxPayload: 20 * 1024 * 1024
 });
@@ -130,8 +134,8 @@ wsServer.on('connection', (ws) => {
     });
 });
 
-// 启动 HTTPS 服务器
-https.createServer(credentials, app).listen(port, () => {
+// 启动 HTTPS 和 WebSocket 服务器
+server.listen(port, () => {
     console.log(`HTTPS 服务器运行在 https://localhost:${port}`);
     console.log(`WebSocket 服务器运行在 wss://localhost:8080`);
 });

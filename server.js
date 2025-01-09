@@ -1,7 +1,14 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const express = require('express');
-const WebSocket = require('ws');
+const fs = require('fs');
+const https = require('https');
 const path = require('path');
 const cors = require('cors');
+
+// 读取证书和私钥
+const privateKey = fs.readFileSync(path.join(__dirname, 'private.key'), 'utf8');
+const certificate = fs.readFileSync(path.join(__dirname, 'cert.pem'), 'utf8');
+const credentials = { key: privateKey, cert: certificate };
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,9 +17,10 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// WebSocket 服务器
-const server = new WebSocket.Server({
-    port: 8080,
+// WebSocket 服务器（保持之前的 WebSocket 配置）
+const WebSocket = require('ws');
+const wsServer = new WebSocket.Server({
+    server: https.createServer(credentials, app),  // 使用 https 服务器提供 WebSocket 服务
     perMessageDeflate: false,
     maxPayload: 20 * 1024 * 1024
 });
@@ -41,21 +49,19 @@ function broadcastDeviceList() {
     }
 }
 
-server.on('connection', (ws) => {
+// WebSocket 连接事件
+wsServer.on('connection', (ws) => {
     console.log('新客户端连接');
     
     // 处理二进制消息
     function handleBinaryMessage(data) {
         try {
-            // 解析头信息
             const headerSize = data.readUInt32LE(0);
             const headerData = data.slice(4, 4 + headerSize);
             const header = JSON.parse(headerData.toString());
 
-            // 转发给目标设备
             const targetClient = clients.get(header.to);
             if (targetClient && targetClient.ws.readyState === WebSocket.OPEN) {
-                // 直接转发原始二进制数据
                 targetClient.ws.send(data, { binary: true });
             } else {
                 console.log('目标设备不存在或未连接:', header.to);
@@ -77,7 +83,6 @@ server.on('connection', (ws) => {
                     ws: ws,
                     deviceInfo: message.deviceInfo
                 });
-                // 广播设备列表
                 broadcastDeviceList();
                 break;
 
@@ -86,7 +91,6 @@ server.on('connection', (ws) => {
                 console.log('转发消息:', message);
                 const targetClient = clients.get(message.to);
                 if (targetClient && targetClient.ws.readyState === WebSocket.OPEN) {
-                    console.log('转发消息到:', message.to);
                     targetClient.ws.send(JSON.stringify(message));
                 } else {
                     console.log('目标设备不存在或未连接:', message.to);
@@ -97,31 +101,24 @@ server.on('connection', (ws) => {
                 console.log('未知消息类型:', message.type);
         }
     }
-    
+
+    // 处理消息
     ws.on('message', (data) => {
         try {
-            // 如果是字符串，直接作为JSON处理
             if (typeof data === 'string') {
                 const message = JSON.parse(data);
                 handleTextMessage(message);
                 return;
             }
-            
-            // 尝试解析为JSON
-            try {
-                const message = JSON.parse(data.toString());
-                handleTextMessage(message);
-            } catch {
-                // 如果解析JSON失败，则作为二进制消息处理
-                handleBinaryMessage(data);
-            }
+
+            handleBinaryMessage(data);
         } catch (error) {
             console.error('处理消息时出错:', error);
         }
     });
 
+    // 关闭连接时清理
     ws.on('close', () => {
-        // 清理断开的连接
         for (const [deviceId, client] of clients.entries()) {
             if (client.ws === ws) {
                 console.log('设备断开连接:', deviceId);
@@ -129,13 +126,12 @@ server.on('connection', (ws) => {
                 break;
             }
         }
-        // 广播更新后的设备列表
         broadcastDeviceList();
     });
 });
 
-// 启动服务器
-app.listen(port, () => {
-    console.log(`服务器运行在 http://localhost:${port}`);
-    console.log(`WebSocket 服务器运行在 ws://localhost:8080`);
-}); 
+// 启动 HTTPS 服务器
+https.createServer(credentials, app).listen(port, () => {
+    console.log(`HTTPS 服务器运行在 https://localhost:${port}`);
+    console.log(`WebSocket 服务器运行在 wss://localhost:8080`);
+});

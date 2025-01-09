@@ -7,7 +7,7 @@ const cors = require('cors');
 
 // 读取证书和私钥
 const privateKey = fs.readFileSync('/etc/ssl/private/private.key');
-const certificate = fs.readFileSync('/usr/local/share/ca-certificates/cert.pem');
+const certificate = fs.readFileSync('/usr/local/share/ca-certificates/cert.crt');
 
 const credentials = { key: privateKey, cert: certificate };
 

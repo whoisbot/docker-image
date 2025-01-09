@@ -1,4 +1,4 @@
-# 使用官方的 Node.js 22.12.0 镜像作为基础镜像
+# 使用官方的 Node.js 16-alpine 镜像作为基础镜像
 FROM node:16-alpine
 
 # 创建并设置工作目录
@@ -12,6 +12,13 @@ RUN npm install
 
 # 复制整个项目到容器中
 COPY . .
+
+# 复制自签名证书到容器内
+COPY cert.pem /usr/local/share/ca-certificates/cert.pem
+COPY private.key /etc/ssl/private/private.key
+
+# 更新证书
+RUN update-ca-certificates
 
 # 暴露容器内的端口（假设应用在 3000 端口运行）
 EXPOSE 3000

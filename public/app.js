@@ -769,112 +769,113 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // 发送按钮处理文本消息
-const sendButton = document.getElementById('sendButton');
-const pasteButton = document.getElementById('pasteButton');
-const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const pasteButton = document.getElementById('pasteButton');
+    const messageInput = document.getElementById('messageInput');
 
-// 添加调试日志
-console.log('发送按钮:', sendButton);
-console.log('消息输入框:', messageInput);
-console.log('粘贴按钮:', pasteButton);
+    
+    // 添加调试日志
+    console.log('发送按钮:', sendButton);
+    console.log('消息输入框:', messageInput);
 
-// 检查元素是否存在
-if (!sendButton || !pasteButton || !messageInput) {
-    alert('未能找到页面上的按钮或输入框');
-}
+    alert('粘贴按钮: ' + (pasteButton ? '存在' : '不存在'));
+    alert('发送按钮: ' + (sendButton ? '存在' : '不存在'));
+    alert('输入框: ' + (messageInput ? '存在' : '不存在'));
+
+
 
 // 粘贴按钮的点击事件
 pasteButton.addEventListener('click', () => {
     alert('粘贴按钮被点击');
-    console.log('粘贴按钮点击事件触发');
 
     // 先尝试使用 Clipboard API
     if (navigator.clipboard && navigator.clipboard.readText) {
         alert('支持 Clipboard API，尝试读取剪贴板内容');
-        console.log('支持 Clipboard API');
 
         // 聚焦输入框，确保光标在输入框内
         messageInput.focus();
         alert('输入框已聚焦');
-        console.log('输入框已聚焦');
 
         // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
         setTimeout(() => {
             messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             alert('滚动到输入框');
-            console.log('滚动到输入框');
         }, 300); // 延时，以便键盘弹出时能够滚动
 
         navigator.clipboard.readText()
             .then(text => {
                 alert('从剪贴板获取到文本: ' + text);
-                console.log('从剪贴板获取到文本:', text);
                 messageInput.value = text;
             })
             .catch(err => {
                 alert('粘贴失败: ' + err);
-                console.error('粘贴失败:', err);
             });
     } else {
         alert('Clipboard API 不受支持，回退到 execCommand 方法');
-        console.log('Clipboard API 不受支持，回退到 execCommand');
 
         // 如果 Clipboard API 不支持，回退到旧的 execCommand 方法
         try {
             // 先聚焦输入框，确保光标在输入框内
             messageInput.focus();
             alert('输入框已聚焦');
-            console.log('输入框已聚焦');
 
             // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
             setTimeout(() => {
                 messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 alert('滚动到输入框');
-                console.log('滚动到输入框');
             }, 300); // 延时，以便键盘弹出时能够滚动
 
             document.execCommand('paste');
             alert('执行 execCommand 粘贴');
-            console.log('执行 execCommand 粘贴');
         } catch (err) {
             alert('execCommand 粘贴失败: ' + err);
-            console.error('execCommand 粘贴失败:', err);
         }
     }
 });
 
-// 回车发送
-messageInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        if (e.shiftKey) {
-            // Shift+Enter 换行，不做处理
-            return;
-        }
-        
-        e.preventDefault();
-        if (selectedDevice) {
-            const message = messageInput.value.trim();
-            if (message) {
-                // 发送消息
-                ws.send(JSON.stringify({
-                    type: 'message',
-                    to: selectedDevice.deviceId,
-                    from: deviceId,
-                    message: message,
-                    sender: getDeviceName()
-                }));
 
-                // 添加到聊天区域
-                addChatMessage(message, getDeviceName(), true);
 
-                // 清空输入框
-                messageInput.value = '';
-                // 重置输入框高度
-                messageInput.style.height = 'auto';
+
+
+
+
+    
+    // 回车发送
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            if (e.shiftKey) {
+                // Shift+Enter 换行，不做处理
+                return;
+            }
+            
+            e.preventDefault();
+            if (selectedDevice) {
+                const message = messageInput.value.trim();
+                if (message) {
+                    // 发送消息
+                    ws.send(JSON.stringify({
+                        type: 'message',
+                        to: selectedDevice.deviceId,
+                        from: deviceId,
+                        message: message,
+                        sender: getDeviceName()
+                    }));
+                    
+                    // 添加到聊天区域
+                    addChatMessage(message, getDeviceName(), true);
+                    
+                    // 清空输入框
+                    messageInput.value = '';
+                    // 重置输入框高度
+                    messageInput.style.height = 'auto';
+                }
             }
         }
-    }
-});
+    });
+
+
+
+
 
 // 发送按钮点击事件
 sendButton.addEventListener('click', () => {
@@ -911,26 +912,59 @@ sendButton.addEventListener('click', () => {
     }, 300);
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 // 添加自动调整高度的功能
 messageInput.addEventListener('input', () => {
     messageInput.style.height = 'auto';
     messageInput.style.height = Math.min(messageInput.scrollHeight, parseInt(getComputedStyle(messageInput).maxHeight)) + 'px';
 });
 
-// 处理移动端键盘事件
-if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-    // 键盘弹出时滚动到输入框
-    messageInput.addEventListener('focus', () => {
-        setTimeout(() => {
-            messageInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 300);
-    });
 
-    // 键盘收起时不需要特殊处理
-    messageInput.addEventListener('blur', () => {
-        // 可以选择在键盘收起时执行其他操作
-    });
-}
+
+
+
+
+
+
+
+
+// 处理移动端键盘事件
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // 键盘弹出时滚动到输入框
+        messageInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                messageInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 300);
+        });
+
+        // 键盘收起时不需要特殊处理
+        messageInput.addEventListener('blur', () => {
+            // 可以选择在键盘收起时执行其他操作
+        });
+    }
+});
+
+
+
+
+
+
+
+
+
+
 
 // 添加消息到聊天区域
 function addChatMessage(message, sender, isSelf = false, deviceId = selectedDevice?.deviceId) {
@@ -951,6 +985,7 @@ function addChatMessage(message, sender, isSelf = false, deviceId = selectedDevi
         displayMessage(formattedMessage, sender, isSelf);
     }
 }
+
 
 function displayMessage(message, sender, isSelf) {
     const chatMessages = document.getElementById('chatMessages');

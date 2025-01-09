@@ -784,40 +784,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 粘贴按钮的点击事件
 pasteButton.addEventListener('click', () => {
+    alert('粘贴按钮被点击');
+
     // 先尝试使用 Clipboard API
     if (navigator.clipboard && navigator.clipboard.readText) {
+        alert('支持 Clipboard API，尝试读取剪贴板内容');
+
         // 聚焦输入框，确保光标在输入框内
         messageInput.focus();
+        alert('输入框已聚焦');
 
         // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
         setTimeout(() => {
             messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            alert('滚动到输入框');
         }, 300); // 延时，以便键盘弹出时能够滚动
 
         navigator.clipboard.readText()
             .then(text => {
+                alert('从剪贴板获取到文本: ' + text);
                 messageInput.value = text;
             })
             .catch(err => {
-                console.error('粘贴失败:', err);
+                alert('粘贴失败: ' + err);
             });
     } else {
+        alert('Clipboard API 不受支持，回退到 execCommand 方法');
+
         // 如果 Clipboard API 不支持，回退到旧的 execCommand 方法
         try {
             // 先聚焦输入框，确保光标在输入框内
             messageInput.focus();
+            alert('输入框已聚焦');
 
             // 延时滚动到输入框位置，避免与移动端键盘滚动冲突
             setTimeout(() => {
                 messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                alert('滚动到输入框');
             }, 300); // 延时，以便键盘弹出时能够滚动
 
             document.execCommand('paste');
+            alert('执行 execCommand 粘贴');
         } catch (err) {
-            console.error('execCommand 粘贴失败:', err);
+            alert('execCommand 粘贴失败: ' + err);
         }
     }
 });
+
 
 
 

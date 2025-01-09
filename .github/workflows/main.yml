@@ -35,5 +35,5 @@ jobs:
         context: .  # 使用当前目录作为构建上下文
         file: ./Dockerfile  # 指定 Dockerfile 文件
         push: true  # 推送镜像到 Docker Hub
-        tags: whoisbot/localshare:latest  # 镜像的标签，替换为你的 Docker Hub 用户名
+        tags: whoisbot/local-share:latest  # 镜像的标签，替换为你的 Docker Hub 用户名
         platforms: linux/arm64  # 只为 ARM64 架构构建镜像
